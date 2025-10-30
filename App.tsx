@@ -21,7 +21,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // In a real-world scenario, process.env.API_KEY would be set during the build process.
-    // Since we are in a browser-only environment, this will likely be false, so we show the warning.
+    // This check helps developers who deploy to platforms like Vercel understand configuration needs.
     if (!process.env.API_KEY) {
       setIsApiKeyMissing(true);
     }
@@ -128,9 +128,23 @@ const App: React.FC = () => {
 
           <div className="light-card rounded-2xl p-6 mb-8">
              {isApiKeyMissing && (
-                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
-                  <p className="font-bold">Configuration Required</p>
-                  <p>The Gemini API key is missing. To enable workflow generation, please set it up as an environment variable (e.g., in your Vercel project settings).</p>
+                <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-4 rounded-lg mb-6" role="alert">
+                  <p className="font-bold mb-2">Configuration Required: API Key Not Found</p>
+                  <p className="text-sm">
+                    It seems the Gemini API key is not available. If you have deployed this to a platform like Vercel, please follow these steps:
+                  </p>
+                  <ol className="list-decimal list-inside text-sm mt-2 space-y-1">
+                    <li>Go to your Vercel project settings and add an Environment Variable named <strong>API_KEY</strong> with your key as the value.</li>
+                    <li>
+                      Frontend applications often require extra configuration to access environment variables. If step 1 doesn't work, you may need to expose the variable during the build process. For a Vite project, add a `define` property to your `vite.config.js`:
+                      <pre className="bg-orange-200/50 text-orange-900 rounded p-2 mt-1 text-xs overflow-x-auto">
+                        <code>
+                          {`// vite.config.js\ndefine: {\n  'process.env.API_KEY': JSON.stringify(process.env.API_KEY)\n}`}
+                        </code>
+                      </pre>
+                    </li>
+                    <li>After configuring, redeploy your application on Vercel.</li>
+                  </ol>
                 </div>
               )}
             <textarea
