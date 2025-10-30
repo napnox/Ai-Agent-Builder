@@ -1,0 +1,5 @@
+{
+  "name": "AI Agent Workflow Builder",
+  "description": "An interactive web app that allows users to create and customize AI Agents or Automation Workflows. Enter prompts and receive intelligent recommendations and exportable JSON workflows.",
+  "requestFramePermissions": []
+}
