@@ -35,6 +35,13 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setWorkflow(null);
+
+    if (!process.env.API_KEY) {
+      setError("Configuration Error: API Key not found. Please ensure it is set up correctly in your environment secrets.");
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const result = await generateWorkflow(userInput, filters);
       setWorkflow(result);
@@ -84,7 +91,7 @@ const App: React.FC = () => {
       );
     }
     if (error) {
-      return <p className="text-center text-red-600 p-8">{error}</p>;
+      return <p className="text-center text-red-600 p-8 bg-red-50 rounded-lg">{error}</p>;
     }
     if (workflow) {
       return (
