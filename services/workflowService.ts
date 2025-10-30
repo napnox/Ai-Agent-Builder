@@ -1,11 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Workflow, Filters } from '../types';
 
-export const generateWorkflow = async (userInput: string, filters: Filters): Promise<Workflow | null> => {
-  const apiKey = process.env.API_KEY;
-
+export const generateWorkflow = async (userInput: string, filters: Filters, apiKey: string): Promise<Workflow | null> => {
   if (!apiKey) {
-    throw new Error("Configuration Error: API Key not found. Please set the API_KEY environment variable.");
+    throw new Error("Configuration Error: API Key is missing. Please provide your key to continue.");
   }
   if (!userInput.trim()) {
     return null;

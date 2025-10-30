@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Workflow, Filters, SingleFilterCategory } from './types';
 import { FILTER_OPTIONS, EXAMPLE_PROMPTS, ICONS } from './constants';
 import { generateWorkflow } from './services/workflowService';
@@ -17,19 +17,22 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isApiKeyMissing, setIsApiKeyMissing] = useState(false);
-
-  useEffect(() => {
-    if (!process.env.API_KEY) {
-      setIsApiKeyMissing(true);
-    }
-  }, []);
-
+  
+  const [apiKey, setApiKey] = useState(process.env.API_KEY || '');
+  const [tempApiKey, setTempApiKey] = useState('');
+  const isApiKeyMissing = !apiKey;
 
   const showToast = (message: string) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
+  
+  const handleApiKeySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (tempApiKey.trim()) {
+        setApiKey(tempApiKey.trim());
+    }
+  }
 
   const handleSingleFilterChange = (category: SingleFilterCategory, value: string) => {
     setFilters(prev => ({ ...prev, [category]: value }));
@@ -40,12 +43,16 @@ const App: React.FC = () => {
   };
 
   const handleGenerate = async () => {
+    if (isApiKeyMissing) {
+      setError("API Key is missing. Please provide your key to continue.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     setWorkflow(null);
     
     try {
-      const result = await generateWorkflow(userInput, filters);
+      const result = await generateWorkflow(userInput, filters, apiKey);
       setWorkflow(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -125,41 +132,69 @@ const App: React.FC = () => {
             </div>
 
           <div className="light-card rounded-2xl p-6 mb-8">
-             {isApiKeyMissing && (
-                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
-                    <p className="font-bold">Configuration Error</p>
-                    <p>Your API key is not configured. Please set the <code className="bg-red-200/50 font-mono rounded px-1 py-0.5 text-xs">API_KEY</code> environment variable in your deployment settings.</p>
-                </div>
-              )}
-            <textarea
-              value={userInput}
-              onChange={e => setUserInput(e.target.value)}
-              placeholder="e.g., When a new order is created in Shopify, add a row to a Google Sheet..."
-              className="w-full h-24 bg-gray-50 border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none text-base placeholder-gray-500"
-            />
-            
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                <FilterDropdown label="Automation Platform" category="platform" options={FILTER_OPTIONS.platform} value={filters.platform} onChange={handleSingleFilterChange} />
-                <FilterDropdown label="Automation Type" category="automationType" options={FILTER_OPTIONS.automationType} value={filters.automationType} onChange={handleSingleFilterChange} />
-                <MultiSelectDropdown label="Tools" options={FILTER_OPTIONS.tools} selectedOptions={filters.tools} onChange={handleToolsChange} />
-            </div>
+             {isApiKeyMissing ? (
+                <form onSubmit={handleApiKeySubmit} className="space-y-4 animate-fadeIn">
+                    <h3 className="text-lg font-bold text-gray-800">Set up your API Key to Start</h3>
+                    <p className="text-sm text-gray-600">
+                        To use this app, you need a Google Gemini API key. Get yours from{' '}
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline font-medium">
+                            Google AI Studio
+                        </a>. 
+                        Your key is only used for this session and is not stored.
+                    </p>
+                    <div>
+                        <label htmlFor="apiKeyInput" className="block text-sm font-medium text-gray-700 mb-1 sr-only">Your Gemini API Key</label>
+                        <input
+                            id="apiKeyInput"
+                            type="password"
+                            value={tempApiKey}
+                            onChange={e => setTempApiKey(e.target.value)}
+                            placeholder="Enter your Gemini API key here"
+                            className="w-full bg-white border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            aria-label="Gemini API Key Input"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={!tempApiKey.trim()}
+                        className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Save and Continue
+                    </button>
+                </form>
+             ) : (
+                <>
+                  <textarea
+                    value={userInput}
+                    onChange={e => setUserInput(e.target.value)}
+                    placeholder="e.g., When a new order is created in Shopify, add a row to a Google Sheet..."
+                    className="w-full h-24 bg-gray-50 border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none text-base placeholder-gray-500"
+                  />
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                      <FilterDropdown label="Automation Platform" category="platform" options={FILTER_OPTIONS.platform} value={filters.platform} onChange={handleSingleFilterChange} />
+                      <FilterDropdown label="Automation Type" category="automationType" options={FILTER_OPTIONS.automationType} value={filters.automationType} onChange={handleSingleFilterChange} />
+                      <MultiSelectDropdown label="Tools" options={FILTER_OPTIONS.tools} selectedOptions={filters.tools} onChange={handleToolsChange} />
+                  </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-                <button
-                    onClick={handleExample}
-                    className="text-indigo-600 hover:text-indigo-800 font-medium transition text-sm"
-                >
-                    Try an Example
-                </button>
-                <button
-                    onClick={handleGenerate}
-                    disabled={isLoading || !userInput || isApiKeyMissing}
-                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
-                >
-                    <ICONS.wand className="w-5 h-5" />
-                    {isLoading ? 'Generating...' : 'Generate Workflow'}
-                </button>
-            </div>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+                      <button
+                          onClick={handleExample}
+                          className="text-indigo-600 hover:text-indigo-800 font-medium transition text-sm"
+                      >
+                          Try an Example
+                      </button>
+                      <button
+                          onClick={handleGenerate}
+                          disabled={isLoading || !userInput || isApiKeyMissing}
+                          className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+                      >
+                          <ICONS.wand className="w-5 h-5" />
+                          {isLoading ? 'Generating...' : 'Generate Workflow'}
+                      </button>
+                  </div>
+                </>
+             )}
           </div>
 
           <div className="min-h-[200px] w-full">
