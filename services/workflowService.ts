@@ -1,14 +1,18 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { Workflow, Filters } from '../types';
+import { API_KEY } from '../env';
 
 export const generateWorkflow = async (userInput: string, filters: Filters): Promise<Workflow | null> => {
   if (!userInput.trim()) {
     return null;
   }
 
-  // FIX: Adhere to Gemini API guidelines by using `process.env.API_KEY` and removing the local API key import and validation logic, which resolves the TypeScript error.
-  const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+  if (!API_KEY) {
+    throw new Error("API Key not found. Please add your Google Gemini API key to the env.ts file.");
+  }
+
+  const ai = new GoogleGenAI({apiKey: API_KEY});
 
   const filtersDescription = Object.entries(filters)
     .filter(([, value]) => {
