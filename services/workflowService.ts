@@ -2,11 +2,16 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { Workflow, Filters } from '../types';
 
 export const generateWorkflow = async (userInput: string, filters: Filters): Promise<Workflow | null> => {
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey) {
+    throw new Error("API Key is not configured. Please set the API_KEY environment variable.");
+  }
   if (!userInput.trim()) {
     return null;
   }
 
-  const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+  const ai = new GoogleGenAI({apiKey: apiKey});
 
   const filtersDescription = Object.entries(filters)
     .filter(([, value]) => {

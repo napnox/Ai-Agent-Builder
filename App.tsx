@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Workflow, Filters, SingleFilterCategory } from './types';
 import { FILTER_OPTIONS, EXAMPLE_PROMPTS, ICONS } from './constants';
 import { generateWorkflow } from './services/workflowService';
@@ -17,6 +17,16 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isApiKeyMissing, setIsApiKeyMissing] = useState(false);
+
+  useEffect(() => {
+    // In a real-world scenario, process.env.API_KEY would be set during the build process.
+    // Since we are in a browser-only environment, this will likely be false, so we show the warning.
+    if (!process.env.API_KEY) {
+      setIsApiKeyMissing(true);
+    }
+  }, []);
+
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -35,12 +45,6 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setWorkflow(null);
-
-    if (!process.env.API_KEY) {
-      setError("Configuration Error: API Key not found. Please ensure it is set up correctly in your environment secrets.");
-      setIsLoading(false);
-      return;
-    }
     
     try {
       const result = await generateWorkflow(userInput, filters);
@@ -123,6 +127,12 @@ const App: React.FC = () => {
             </div>
 
           <div className="light-card rounded-2xl p-6 mb-8">
+             {isApiKeyMissing && (
+                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg mb-6" role="alert">
+                  <p className="font-bold">Configuration Required</p>
+                  <p>The Gemini API key is missing. To enable workflow generation, please set it up as an environment variable (e.g., in your Vercel project settings).</p>
+                </div>
+              )}
             <textarea
               value={userInput}
               onChange={e => setUserInput(e.target.value)}
@@ -145,7 +155,7 @@ const App: React.FC = () => {
                 </button>
                 <button
                     onClick={handleGenerate}
-                    disabled={isLoading || !userInput}
+                    disabled={isLoading || !userInput || isApiKeyMissing}
                     className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
                 >
                     <ICONS.wand className="w-5 h-5" />
