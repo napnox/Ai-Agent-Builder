@@ -5,7 +5,7 @@ export const generateWorkflow = async (userInput: string, filters: Filters): Pro
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
-    throw new Error("API Key is not configured. Please set the API_KEY environment variable.");
+    throw new Error("Configuration Error: API Key not found. Please set the API_KEY environment variable.");
   }
   if (!userInput.trim()) {
     return null;
