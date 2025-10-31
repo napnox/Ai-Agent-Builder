@@ -109,19 +109,13 @@ const App: React.FC = () => {
       <div className="w-full max-w-4xl mx-auto">
         
         <main className="w-full">
-            <div className="text-center mb-8">
-                <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-2">
-                    AI Agent Workflow Builder
-                </h1>
-                <p className="text-lg text-gray-600">Describe what you want to automate, and let AI build it for you.</p>
-            </div>
-
-          <div className="light-card rounded-2xl p-6 mb-8">
+            
+          <div className="light-card animated-border-box shadow-2xl rounded-2xl p-6 mb-16">
             <textarea
               value={userInput}
               onChange={e => setUserInput(e.target.value)}
               placeholder="e.g., When a new order is created in Shopify, add a row to a Google Sheet..."
-              className="w-full h-24 bg-gray-50 border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none text-base placeholder-gray-500"
+              className="w-full h-28 bg-white border border-gray-300 rounded-lg p-4 focus-custom transition resize-none text-lg placeholder-gray-500"
             />
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
@@ -133,14 +127,14 @@ const App: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
                 <button
                     onClick={handleExample}
-                    className="text-indigo-600 hover:text-indigo-800 font-medium transition text-sm"
+                    className="custom-text-link font-medium transition text-sm"
                 >
                     Try an Example
                 </button>
                 <button
                     onClick={handleGenerate}
                     disabled={isLoading || !userInput}
-                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto custom-button text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
                 >
                     <ICONS.wand className="w-5 h-5" />
                     {isLoading ? 'Generating...' : 'Generate Workflow'}

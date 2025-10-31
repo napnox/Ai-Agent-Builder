@@ -25,6 +25,86 @@
         border: 1px solid #E5E7EB; /* gray-200 */
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
       }
+      
+      /* --- Custom Styles for User Request --- */
+      @property --angle {
+        syntax: '<angle>';
+        initial-value: 0deg;
+        inherits: false;
+      }
+
+      @keyframes rotate {
+        to {
+          --angle: 360deg;
+        }
+      }
+
+      .animated-border-box {
+        --border-size: 3px;
+        --angle: 0deg;
+        border: var(--border-size) solid transparent;
+        background-image:
+          linear-gradient(to right, #ffffff, #ffffff), /* inner bg */
+          conic-gradient(from var(--angle), #2b9e91, #6366f1, #ec4899, #f59e0b, #2b9e91); /* border gradient */
+        background-size: 100% 100%, cover;
+        background-position: center, center;
+        background-repeat: no-repeat, no-repeat;
+        background-origin: border-box, border-box;
+        background-clip: padding-box, border-box;
+        animation: rotate 6s linear infinite;
+      }
+
+      .custom-button {
+          background-color: #2b9e91;
+      }
+      .custom-button:hover {
+          background-color: #248277; /* A slightly darker shade for hover */
+      }
+      .custom-text-link {
+          color: #2b9e91;
+      }
+      .custom-text-link:hover {
+          color: #248277;
+      }
+
+      /* Custom focus ring color */
+      .focus-custom:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+        box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        --tw-ring-color: #2b9e91;
+        --tw-ring-opacity: 0.5;
+        border-color: #2b9e91;
+      }
+      
+      /* --- NEW STYLES FOR DROPDOWN REFINEMENT --- */
+
+      /* Custom light background for selected dropdown items */
+      .custom-selected-bg {
+        background-color: #f0fdfa; /* A very light teal, like Tailwind's cyan-50 */
+      }
+
+      /* Custom checkbox color to match theme */
+      .custom-checkbox {
+        color: #2b9e91;
+      }
+      
+      /* Custom Scrollbar for Webkit browsers */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f8fafc; /* slate-50 */
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0; /* slate-200 */
+        border-radius: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1; /* slate-300 */
+      }
     </style>
   <script type="importmap">
 {
