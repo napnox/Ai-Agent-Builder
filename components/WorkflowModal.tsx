@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Workflow } from '../types';
 import { ICONS } from '../constants';
@@ -45,7 +46,7 @@ const WorkflowModal: React.FC<WorkflowModalProps> = ({ workflow, onClose, onCopy
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{workflow.title}</h2>
             <div className="flex flex-wrap gap-2 mt-2">
-              <span className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase">{workflow.runner}</span>
+              <span className="bg-teal-100 text-[#2b9e91] text-xs font-bold px-2.5 py-1 rounded-full uppercase">{workflow.runner}</span>
               {workflow.tags.map(tag => (
                 <span key={tag} className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">{tag}</span>
               ))}
@@ -75,7 +76,7 @@ const WorkflowModal: React.FC<WorkflowModalProps> = ({ workflow, onClose, onCopy
               <ul className="space-y-2">
                 {workflow.key_features.map((feature, index) => (
                     <li key={index} className="flex items-start text-sm">
-                        <ICONS.check className="w-4 h-4 mr-2 mt-0.5 text-indigo-500 flex-shrink-0" />
+                        <ICONS.check className="w-4 h-4 mr-2 mt-0.5 text-[#2b9e91] flex-shrink-0" />
                         <span>{feature}</span>
                     </li>
                 ))}
@@ -106,7 +107,7 @@ const WorkflowModal: React.FC<WorkflowModalProps> = ({ workflow, onClose, onCopy
           </button>
           <button
             onClick={() => onDownloadJson(workflow)}
-            className="flex items-center gap-2 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+            className="flex items-center gap-2 custom-button text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
           >
             <ICONS.download className="w-4 h-4"/> Download JSON
           </button>

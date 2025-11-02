@@ -1,24 +1,13 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { Workflow, Filters } from '../types';
-import { API_KEY } from '../env';
 
 export const generateWorkflow = async (userInput: string, filters: Filters): Promise<Workflow | null> => {
-  if (!API_KEY) {
-    throw new Error(
-      "Authentication Error: The Gemini API key is missing in your env.ts file. " +
-      "Please ensure the file exists at the root of your project and contains your API key."
-    );
-  }
-
   if (!userInput.trim()) {
     return null;
   }
 
-  // WARNING: Your API key is being imported directly from a file into this client-side application.
-  // This is NOT secure and means your API key will be publicly visible in the browser.
-  // For a real production app, you should always use server-side environment variables.
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const filtersDescription = Object.entries(filters)
     .filter(([, value]) => {
@@ -116,9 +105,6 @@ ${filtersDescription || 'None specified. You have the freedom to choose the best
     return null;
   } catch (error) {
     console.error("Error generating workflows with Gemini:", error);
-    if (error.toString().toLowerCase().includes("api key")) {
-        throw new Error("There is an issue with your API key. Please ensure it's set correctly in your env.ts file.");
-    }
     throw new Error('Failed to generate workflow from AI. Please check your prompt or try again.');
   }
 };
