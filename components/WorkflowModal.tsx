@@ -48,7 +48,7 @@ const WorkflowModal: React.FC<WorkflowModalProps> = ({ workflow, onClose, onCopy
             <div className="flex flex-wrap gap-2 mt-2">
               <span className="bg-teal-100 text-[#2b9e91] text-xs font-bold px-2.5 py-1 rounded-full uppercase">{workflow.runner}</span>
               {workflow.tags.map(tag => (
-                <span key={tag} className="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full">{tag}</span>
+                <span key={tag} className="bg-teal-100 text-[#2b9e91] text-xs font-medium px-2.5 py-1 rounded-full">{tag}</span>
               ))}
             </div>
           </div>
