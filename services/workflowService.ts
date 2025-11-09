@@ -83,10 +83,23 @@ ${filtersDescription || 'None specified. You have the freedom to choose the best
       },
     });
 
-    const resultsFromAI = JSON.parse(response.text);
+    let resultsFromAI;
+    try {
+      resultsFromAI = JSON.parse(response.text);
+    } catch (parseError) {
+      console.error("Failed to parse the main AI response JSON:", parseError);
+      console.error("Invalid JSON received:", response.text);
+      throw new Error("The AI returned a malformed response. Please try again.");
+    }
 
     if (Array.isArray(resultsFromAI) && resultsFromAI.length > 0) {
       const item = resultsFromAI[0];
+
+      if (typeof item.json_workflow_string !== 'string') {
+          console.error("AI response is missing 'json_workflow_string' or it is not a string:", item);
+          throw new Error("The AI failed to generate the workflow's technical details. Please adjust your prompt.");
+      }
+
       try {
         const json_workflow = JSON.parse(item.json_workflow_string);
         return {
@@ -103,13 +116,18 @@ ${filtersDescription || 'None specified. You have the freedom to choose the best
           ai_generated: item.ai_generated,
         };
       } catch (e) {
-        console.error("Failed to parse json_workflow_string from AI response:", item.json_workflow_string, e);
-        return null;
+        console.error("Failed to parse nested json_workflow_string from AI response:", item.json_workflow_string, e);
+        throw new Error("The AI returned an invalid workflow structure. Please try refining your prompt or generating again.");
       }
     }
+    
+    console.warn("AI returned an empty or invalid workflow array:", resultsFromAI);
     return null;
   } catch (error) {
-    console.error("Error generating workflows with Gemini:", error);
-    throw new Error('Failed to generate workflow from AI. Please check your prompt or try again.');
+    console.error("Error in generateWorkflow service:", error);
+    if (error instanceof Error && (error.message.startsWith("The AI returned") || error.message.startsWith("Please replace"))) {
+        throw error;
+    }
+    throw new Error('Failed to generate workflow from AI. Please check your API key, prompt, or try again later.');
   }
 };
