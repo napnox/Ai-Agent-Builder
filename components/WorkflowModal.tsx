@@ -8,9 +8,11 @@ interface WorkflowModalProps {
   onClose: () => void;
   onCopyJson: (json: object) => void;
   onDownloadJson: (workflow: Workflow) => void;
+  onSaveToNapNox: (workflow: Workflow) => void;
+  isNapNoxUser: boolean;
 }
 
-const WorkflowModal: React.FC<WorkflowModalProps> = ({ workflow, onClose, onCopyJson, onDownloadJson }) => {
+const WorkflowModal: React.FC<WorkflowModalProps> = ({ workflow, onClose, onCopyJson, onDownloadJson, onSaveToNapNox, isNapNoxUser }) => {
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'Escape') {
       onClose();
@@ -111,6 +113,14 @@ const WorkflowModal: React.FC<WorkflowModalProps> = ({ workflow, onClose, onCopy
           >
             <ICONS.download className="w-4 h-4"/> Download JSON
           </button>
+          {isNapNoxUser && (
+            <button
+              onClick={() => onSaveToNapNox(workflow)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+            >
+              <ICONS.save className="w-4 h-4"/> Save to NapNox
+            </button>
+          )}
         </footer>
       </div>
     </div>

@@ -1,14 +1,13 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { Workflow, Filters } from '../types';
-import { API_KEY } from '../env';
 
 export const generateWorkflow = async (userInput: string, filters: Filters): Promise<Workflow | null> => {
   if (!userInput.trim()) {
     return null;
   }
 
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const filtersDescription = Object.entries(filters)
     .filter(([, value]) => {

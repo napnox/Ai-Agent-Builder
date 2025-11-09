@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Workflow, Filters, SingleFilterCategory } from './types';
 import { FILTER_OPTIONS, EXAMPLE_PROMPTS, ICONS } from './constants';
 import { generateWorkflow } from './services/workflowService';
@@ -7,6 +7,8 @@ import FilterDropdown from './components/FilterDropdown';
 import WorkflowCard from './components/WorkflowCard';
 import WorkflowModal from './components/WorkflowModal';
 import MultiSelectDropdown from './components/MultiSelectDropdown';
+
+const MAX_GENERATIONS = 3;
 
 const App: React.FC = () => {
   const [userInput, setUserInput] = useState('');
@@ -18,6 +20,21 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  
+  const [napNoxUser, setNapNoxUser] = useState<{ id: string; token: string | null } | null>(null);
+  const [generationCount, setGenerationCount] = useState(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get("user_id");
+    const token = params.get("token");
+    if (userId) {
+      const user = { id: userId, token };
+      setNapNoxUser(user);
+      const savedCount = parseInt(localStorage.getItem(`generationCount_${user.id}`) || '0', 10);
+      setGenerationCount(savedCount);
+    }
+  }, []);
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -33,6 +50,10 @@ const App: React.FC = () => {
   };
 
   const handleGenerate = async () => {
+    if (napNoxUser && generationCount >= MAX_GENERATIONS) {
+        setError(`You have reached your limit of ${MAX_GENERATIONS} free generations.`);
+        return;
+    }
     setIsLoading(true);
     setError(null);
     setWorkflow(null);
@@ -40,6 +61,11 @@ const App: React.FC = () => {
     try {
       const result = await generateWorkflow(userInput, filters);
       setWorkflow(result);
+       if (result && napNoxUser) {
+        const newCount = generationCount + 1;
+        setGenerationCount(newCount);
+        localStorage.setItem(`generationCount_${napNoxUser.id}`, newCount.toString());
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
       console.error(err);
@@ -71,6 +97,44 @@ const App: React.FC = () => {
     URL.revokeObjectURL(url);
     showToast('JSON download started!');
   }, []);
+  
+  const handleSaveToNapNox = useCallback(async (workflowToSave: Workflow) => {
+    if (!napNoxUser) {
+      showToast("Please log in to NapNox first.");
+      return;
+    }
+
+    const workflowData = {
+      title: workflowToSave.title,
+      short_description: workflowToSave.description,
+      category: filters.automationType || workflowToSave.tags[0] || 'Uncategorized',
+      tags: workflowToSave.tags.join(', '),
+      tool_used: workflowToSave.runner,
+      difficulty: "Easy", // Default value from instructions
+      json_workflow: workflowToSave.json_workflow,
+      user_id: napNoxUser.id
+    };
+    
+    showToast("Saving to NapNox...");
+
+    try {
+      const res = await fetch("https://napnox.com/wp-json/napnox/v1/save-workflow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(workflowData)
+      });
+      const result = await res.json();
+      if (res.ok) {
+        showToast("✅ Workflow saved successfully to NapNox!");
+      } else {
+        console.error("NapNox API Error:", result);
+        showToast(`❌ Error: ${result.message || 'Could not save workflow.'}`);
+      }
+    } catch (error) {
+      console.error("Network error when saving to NapNox:", error);
+      showToast("⚠️ Network error, please try again later.");
+    }
+  }, [napNoxUser, filters.automationType]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -105,6 +169,20 @@ const App: React.FC = () => {
     );
   };
 
+  if (!napNoxUser) {
+    return (
+        <div className="min-h-screen w-full flex items-center justify-center p-4">
+            <div className="text-center p-8 bg-white rounded-2xl shadow-lg border">
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+                <p className="text-gray-600">Please log in to your account on NapNox.com to use the AI Workflow Builder.</p>
+            </div>
+        </div>
+    )
+  }
+
+  const generationsLeft = MAX_GENERATIONS - generationCount;
+  const canGenerate = generationsLeft > 0;
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4">
       <div className="w-full max-w-4xl mx-auto">
@@ -126,15 +204,20 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-                <button
-                    onClick={handleExample}
-                    className="custom-text-link font-medium transition text-sm"
-                >
-                    Try an Example
-                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={handleExample}
+                        className="custom-text-link font-medium transition text-sm"
+                    >
+                        Try an Example
+                    </button>
+                    <p className="text-sm text-gray-500">
+                        {canGenerate ? `${generationsLeft} generation${generationsLeft !== 1 ? 's' : ''} left` : 'No generations left'}
+                    </p>
+                </div>
                 <button
                     onClick={handleGenerate}
-                    disabled={isLoading || !userInput}
+                    disabled={isLoading || !userInput || !canGenerate}
                     className="w-full sm:w-auto custom-button text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
                 >
                     <ICONS.wand className="w-5 h-5" />
@@ -150,7 +233,7 @@ const App: React.FC = () => {
       </div>
       
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg animate-fadeIn">
+        <div className="fixed bottom-5 right-5 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg animate-fadeIn z-50">
           {toastMessage}
         </div>
       )}
@@ -160,6 +243,8 @@ const App: React.FC = () => {
         onClose={() => setSelectedWorkflow(null)}
         onCopyJson={handleCopyJson}
         onDownloadJson={handleDownloadJson}
+        onSaveToNapNox={handleSaveToNapNox}
+        isNapNoxUser={!!napNoxUser}
       />
     </div>
   );
