@@ -9,6 +9,7 @@ import WorkflowModal from './components/WorkflowModal';
 import MultiSelectDropdown from './components/MultiSelectDropdown';
 
 const MAX_GENERATIONS = 3;
+const REFILL_HOURS = 12;
 
 const App: React.FC = () => {
   const [userInput, setUserInput] = useState('');
@@ -23,6 +24,9 @@ const App: React.FC = () => {
   
   const [napNoxUser, setNapNoxUser] = useState<{ id: string; token: string | null } | null>(null);
   const [generationCount, setGenerationCount] = useState(0);
+  const [wpNonce, setWpNonce] = useState<string | null>(null);
+  const [resetTime, setResetTime] = useState<number | null>(null);
+
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -31,8 +35,44 @@ const App: React.FC = () => {
     if (userId) {
       const user = { id: userId, token };
       setNapNoxUser(user);
-      const savedCount = parseInt(localStorage.getItem(`generationCount_${user.id}`) || '0', 10);
-      setGenerationCount(savedCount);
+      
+      // Handle generation count with 12-hour reset
+      const savedDataRaw = localStorage.getItem(`generationData_${user.id}`);
+      if (savedDataRaw) {
+        try {
+          const savedData = JSON.parse(savedDataRaw);
+          const twelveHoursAgo = Date.now() - (REFILL_HOURS * 60 * 60 * 1000);
+          
+          if (savedData.timestamp < twelveHoursAgo) {
+            // Timer has expired, reset count
+            setGenerationCount(0);
+            setResetTime(null);
+            localStorage.removeItem(`generationData_${user.id}`);
+          } else {
+            // Timer is still active
+            setGenerationCount(savedData.count);
+            setResetTime(savedData.timestamp + (REFILL_HOURS * 60 * 60 * 1000));
+          }
+        } catch (e) {
+          setGenerationCount(0);
+        }
+      }
+
+      // Fetch the security nonce from WordPress
+      const fetchNonce = async () => {
+        try {
+          const res = await fetch("https://napnox.com/wp-json/napnox/v1/get-nonce");
+          const data = await res.json();
+          if (res.ok && data.nonce) {
+            setWpNonce(data.nonce);
+          } else {
+            setError("Could not establish a secure connection with NapNox.");
+          }
+        } catch (err) {
+          setError("Failed to connect to NapNox for saving.");
+        }
+      };
+      fetchNonce();
     }
   }, []);
 
@@ -64,7 +104,11 @@ const App: React.FC = () => {
        if (result && napNoxUser) {
         const newCount = generationCount + 1;
         setGenerationCount(newCount);
-        localStorage.setItem(`generationCount_${napNoxUser.id}`, newCount.toString());
+        
+        const timestamp = Date.now();
+        const newData = { count: newCount, timestamp };
+        localStorage.setItem(`generationData_${napNoxUser.id}`, JSON.stringify(newData));
+        setResetTime(timestamp + (REFILL_HOURS * 60 * 60 * 1000));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -103,6 +147,10 @@ const App: React.FC = () => {
       showToast("Please log in to NapNox first.");
       return;
     }
+    if (!wpNonce) {
+      showToast("❌ Secure connection not ready. Please wait a moment and try again.");
+      return;
+    }
 
     const workflowData = {
       title: workflowToSave.title,
@@ -110,8 +158,7 @@ const App: React.FC = () => {
       category: filters.automationType || workflowToSave.tags[0] || 'Uncategorized',
       tags: workflowToSave.tags.join(', '),
       tool_used: workflowToSave.runner,
-      difficulty: "Easy", // Default value from instructions
-      // Convert the JSON object to a string before sending it to WordPress
+      difficulty: "Easy",
       json_workflow: JSON.stringify(workflowToSave.json_workflow, null, 2),
       user_id: napNoxUser.id
     };
@@ -121,9 +168,12 @@ const App: React.FC = () => {
     try {
       const res = await fetch("https://napnox.com/wp-json/napnox/v1/save-workflow", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-WP-Nonce": wpNonce // Sending the security token
+        },
         body: JSON.stringify(workflowData),
-        credentials: 'include' // This is the crucial line that sends the login cookie.
+        credentials: 'include'
       });
       const result = await res.json();
       if (res.ok) {
@@ -136,13 +186,34 @@ const App: React.FC = () => {
       console.error("Network error when saving to NapNox:", error);
       showToast("⚠️ Network error, please try again later.");
     }
-  }, [napNoxUser, filters.automationType]);
+  }, [napNoxUser, filters.automationType, wpNonce]);
+  
+  const CountdownTimer = ({ expiryTimestamp }: { expiryTimestamp: number }) => {
+    const [timeLeft, setTimeLeft] = useState(expiryTimestamp - Date.now());
+
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+        const intervalId = setInterval(() => {
+            setTimeLeft(expiryTimestamp - Date.now());
+        }, 1000);
+        return () => clearInterval(intervalId);
+    }, [expiryTimestamp, timeLeft]);
+
+    if (timeLeft <= 0) {
+        return <span>Refilled!</span>;
+    }
+    
+    const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
+
+    return <span>Refills in: {hours}h {minutes}m</span>;
+  };
 
   const renderContent = () => {
     if (isLoading) {
       return (
         <div className="flex flex-col items-center justify-center text-center p-8 text-gray-500">
-            <svg className="animate-spin h-8 w-8 text-[#2b9e91] mb-4" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin h-8 w-8 text-[#2b9e91] mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -224,7 +295,9 @@ const App: React.FC = () => {
                         Try an Example
                     </button>
                     <p className="text-sm text-gray-500">
-                        {canGenerate ? `${generationsLeft} generation${generationsLeft !== 1 ? 's' : ''} left` : 'No generations left'}
+                        {canGenerate 
+                          ? `${generationsLeft} generation${generationsLeft !== 1 ? 's' : ''} left` 
+                          : (resetTime ? <CountdownTimer expiryTimestamp={resetTime} /> : 'No generations left')}
                     </p>
                 </div>
                 <button
