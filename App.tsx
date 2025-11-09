@@ -111,7 +111,8 @@ const App: React.FC = () => {
       tags: workflowToSave.tags.join(', '),
       tool_used: workflowToSave.runner,
       difficulty: "Easy", // Default value from instructions
-      json_workflow: workflowToSave.json_workflow,
+      // Convert the JSON object to a string before sending it to WordPress
+      json_workflow: JSON.stringify(workflowToSave.json_workflow, null, 2),
       user_id: napNoxUser.id
     };
     
