@@ -36,7 +36,6 @@ const App: React.FC = () => {
       const user = { id: userId, token };
       setNapNoxUser(user);
       
-      // Handle generation count with 12-hour reset
       const savedDataRaw = localStorage.getItem(`generationData_${user.id}`);
       if (savedDataRaw) {
         try {
@@ -44,12 +43,10 @@ const App: React.FC = () => {
           const twelveHoursAgo = Date.now() - (REFILL_HOURS * 60 * 60 * 1000);
           
           if (savedData.timestamp < twelveHoursAgo) {
-            // Timer has expired, reset count
             setGenerationCount(0);
             setResetTime(null);
             localStorage.removeItem(`generationData_${user.id}`);
           } else {
-            // Timer is still active
             setGenerationCount(savedData.count);
             setResetTime(savedData.timestamp + (REFILL_HOURS * 60 * 60 * 1000));
           }
@@ -58,7 +55,6 @@ const App: React.FC = () => {
         }
       }
 
-      // Fetch the security nonce from WordPress
       const fetchNonce = async () => {
         try {
           const res = await fetch("https://napnox.com/wp-json/napnox/v1/get-nonce");
@@ -78,7 +74,7 @@ const App: React.FC = () => {
 
   const showToast = (message: string) => {
     setToastMessage(message);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   const handleSingleFilterChange = (category: SingleFilterCategory, value: string) => {
@@ -105,10 +101,17 @@ const App: React.FC = () => {
         const newCount = generationCount + 1;
         setGenerationCount(newCount);
         
-        const timestamp = Date.now();
-        const newData = { count: newCount, timestamp };
+        const savedDataRaw = localStorage.getItem(`generationData_${napNoxUser.id}`);
+        let timestampToSave;
+        if (savedDataRaw) {
+            timestampToSave = JSON.parse(savedDataRaw).timestamp;
+        } else {
+            timestampToSave = Date.now();
+        }
+        
+        const newData = { count: newCount, timestamp: timestampToSave };
         localStorage.setItem(`generationData_${napNoxUser.id}`, JSON.stringify(newData));
-        setResetTime(timestamp + (REFILL_HOURS * 60 * 60 * 1000));
+        setResetTime(timestampToSave + (REFILL_HOURS * 60 * 60 * 1000));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -148,7 +151,7 @@ const App: React.FC = () => {
       return;
     }
     if (!wpNonce) {
-      showToast("❌ Secure connection not ready. Please wait a moment and try again.");
+      showToast("❌ Secure connection not ready. Please wait and try again.");
       return;
     }
 
@@ -170,17 +173,27 @@ const App: React.FC = () => {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "X-WP-Nonce": wpNonce // Sending the security token
+          "X-WP-Nonce": wpNonce
         },
         body: JSON.stringify(workflowData),
         credentials: 'include'
       });
-      const result = await res.json();
+
       if (res.ok) {
+        const result = await res.json();
         showToast("✅ Workflow saved successfully to NapNox!");
       } else {
-        console.error("NapNox API Error:", result);
-        showToast(`❌ Error: ${result.message || 'Could not save workflow.'}`);
+        const result = await res.json();
+        const errorMessage = result.message || 'Could not save workflow.';
+        
+        if (res.status === 403) {
+            console.error("NapNox Permission Error:", result);
+            setError(`WordPress Permission Denied: The save was blocked. This is usually a cross-domain cookie issue. Please ensure you are logged in to NapNox and that your browser allows third-party cookies for NapNox.com. If the issue persists, it may be a server configuration problem.`);
+            showToast(`❌ Permission Error: ${errorMessage}`);
+        } else {
+            console.error("NapNox API Error:", result);
+            showToast(`❌ Error: ${errorMessage}`);
+        }
       }
     } catch (error) {
       console.error("Network error when saving to NapNox:", error);
@@ -194,13 +207,20 @@ const App: React.FC = () => {
     useEffect(() => {
         if (timeLeft <= 0) return;
         const intervalId = setInterval(() => {
-            setTimeLeft(expiryTimestamp - Date.now());
+            const newTimeLeft = expiryTimestamp - Date.now();
+            if (newTimeLeft <= 0) {
+              // Refresh the component state once the timer hits zero
+              setTimeLeft(0);
+              window.location.reload(); 
+            } else {
+              setTimeLeft(newTimeLeft);
+            }
         }, 1000);
         return () => clearInterval(intervalId);
     }, [expiryTimestamp, timeLeft]);
 
     if (timeLeft <= 0) {
-        return <span>Refilled!</span>;
+        return <span>Credits Refilled!</span>;
     }
     
     const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
@@ -223,7 +243,7 @@ const App: React.FC = () => {
       );
     }
     if (error) {
-      return <p className="text-center text-red-600 p-8 bg-red-50 rounded-lg">{error}</p>;
+      return <p className="text-center text-red-600 p-8 bg-red-50 rounded-lg whitespace-pre-wrap">{error}</p>;
     }
     if (workflow) {
       return (
