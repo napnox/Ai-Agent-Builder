@@ -7,6 +7,10 @@ export const generateWorkflow = async (userInput: string, filters: Filters): Pro
     return null;
   }
 
+  if (!process.env.API_KEY) {
+    throw new Error("An API Key must be set when running in a browser");
+  }
+
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const filtersDescription = Object.entries(filters)

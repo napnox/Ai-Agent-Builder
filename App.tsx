@@ -170,33 +170,21 @@ const App: React.FC = () => {
   };
 
   if (!napNoxUser) {
-    const currentUrl = window.location.href;
-    const urlHasUserId = currentUrl.includes('user_id=');
-
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-4">
             <div className="text-center p-8 bg-white rounded-2xl shadow-lg border max-w-2xl">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
-                <p className="text-gray-600 mb-4">Please log in to your account on NapNox.com to use the AI Workflow Builder.</p>
+                <p className="text-gray-600 mb-6">Please log in to your account on NapNox.com to use the AI Workflow Builder.</p>
                 
-                <div className="bg-gray-100 p-4 rounded-lg text-left text-sm mt-6 border border-gray-200">
-                    <h3 className="font-semibold text-gray-700 mb-2">Debugging Information</h3>
-                    <p className="text-gray-600">This app is not detecting a NapNox <code className="bg-gray-200 text-xs p-1 rounded">user_id</code> in the URL.</p>
-                    <p className="text-gray-600 mt-2">
-                        Please ensure the iframe on your WordPress site is configured correctly. The iframe <code className="bg-gray-200 text-xs p-1 rounded">src</code> attribute must include the user's ID as a query parameter.
-                    </p>
-                    <p className="text-gray-600 mt-2">
-                        Example: <code className="bg-gray-200 text-xs p-1 rounded break-all">https://[your-app-url]/?user_id=123</code>
-                    </p>
-                    <hr className="my-3 border-gray-300" />
-                    <p className="text-gray-600">
-                        <strong>Current iframe URL:</strong>
-                        <code className="block bg-gray-200 text-xs p-2 rounded mt-1 break-all">{currentUrl}</code>
-                    </p>
-                    <p className={`mt-2 font-semibold ${urlHasUserId ? 'text-green-600' : 'text-red-600'}`}>
-                        {urlHasUserId ? '✅ URL contains "user_id="' : '❌ URL does not contain "user_id="'}
-                    </p>
-                </div>
+                <a 
+                  href="https://napnox.com/login-napnox/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 custom-button text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
+                >
+                  <ICONS.login className="w-5 h-5" />
+                  Login on NapNox.com
+                </a>
             </div>
         </div>
     );
