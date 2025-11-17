@@ -6,6 +6,10 @@ export const generateWorkflow = async (userInput: string, filters: Filters): Pro
     return null;
   }
 
+  if (!process.env.API_KEY || process.env.API_KEY.trim() === '') {
+    throw new Error('API key is missing or empty. Please ensure the `API_KEY` environment variable is correctly set in your deployment environment.');
+  }
+
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const filtersDescription = Object.entries(filters)
