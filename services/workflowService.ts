@@ -6,14 +6,13 @@ export const generateWorkflow = async (userInput: string, filters: Filters): Pro
     return null;
   }
 
-  // Use the environment variable if available, otherwise fall back to the provided key to ensure functionality.
-  const apiKey = process.env.API_KEY || 'AIzaSyBTSAK2mh15BKwInjLgSB_dF2ySE3UgJrY';
+  const apiKey = process.env.API_KEY;
 
   if (!apiKey || apiKey.trim() === '') {
-    throw new Error('API key is missing or empty. Please ensure the `API_KEY` environment variable is correctly set in your deployment environment.');
+    throw new Error('Configuration Error: The `API_KEY` is missing. Please ensure the API key is correctly set as an environment variable in your NapNox deployment settings.');
   }
 
-  const ai = new GoogleGenAI({ apiKey: apiKey });
+  const ai = new GoogleGenAI({ apiKey });
 
   const filtersDescription = Object.entries(filters)
     .filter(([, value]) => {
@@ -125,10 +124,28 @@ ${filtersDescription || 'None specified. You have the freedom to choose the best
     console.warn("AI returned an empty or invalid workflow array:", resultsFromAI);
     return null;
   } catch (error) {
-    console.error("Error in generateWorkflow service:", error);
-    if (error instanceof Error && (error.message.startsWith("The AI returned") || error.message.startsWith("Please replace"))) {
-        throw error;
+    console.error("Error generating workflow:", error);
+
+    if (error instanceof Error) {
+        // Re-throw our custom parsing errors directly
+        if (error.message.startsWith("The AI returned")) {
+            throw error;
+        }
+
+        // Check for common API key-related error messages from the Gemini API
+        const lowerCaseErrorMessage = error.message.toLowerCase();
+        if (lowerCaseErrorMessage.includes("api key not valid") || lowerCaseErrorMessage.includes("api_key_not_valid")) {
+            throw new Error("Authentication Error: The API key is not valid. Please ensure you have configured the correct API key in your NapNox environment settings.");
+        }
+        if (lowerCaseErrorMessage.includes("permission denied")) {
+             throw new Error("Permission Error: The API key does not have permission to use the Gemini API. Please check the permissions in your Google Cloud project.");
+        }
+        if (lowerCaseErrorMessage.includes("billing")) {
+            throw new Error("Billing Error: There is an issue with the billing account associated with your API key. Please check your Google Cloud billing status.");
+        }
     }
-    throw new Error('Failed to generate workflow from AI. Please check your API key, prompt, or try again later.');
+    
+    // Fallback for other errors
+    throw new Error('Failed to generate workflow from AI. An unexpected error occurred. Please check the console for details and try again.');
   }
 };
