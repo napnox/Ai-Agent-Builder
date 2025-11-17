@@ -138,7 +138,9 @@ const App: React.FC = () => {
   
   const handleSaveToNapNox = useCallback(async (workflowToSave: Workflow) => {
     if (!napNoxUser || !napNoxUser.jwtToken) {
-      showToast("Authentication token not found. Please reload the page.");
+      const errorMessage = "Authentication Error: The JWT security token is missing from the URL. Please check for a debug message on your WordPress page and ensure the JWT plugin is configured correctly with a secret key.";
+      showToast(errorMessage);
+      setError(errorMessage);
       return;
     }
 
