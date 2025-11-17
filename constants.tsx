@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Filters } from './types';
+import { Filters, Workflow } from './types';
 
 export const FILTER_OPTIONS: { [key in keyof Filters]: string[] } = {
   platform: ['Any', 'n8n', 'Zapier', 'Make', 'Custom Code'],
@@ -66,6 +66,83 @@ export const EXAMPLE_PROMPTS = [
   "Generate a lead magnet summary from a YouTube video URL and email it to new subscribers.",
   "Build an agent that scrapes tech news daily and sends a summary to a Slack channel.",
 ];
+
+export const SAMPLE_WORKFLOWS: Workflow[] = [
+  {
+    id: 'sample-1',
+    title: 'Automated Blog Post Announcer',
+    description: 'When a new article is published on your blog\'s RSS feed, this workflow automatically creates a summary and posts it to your Twitter/X and LinkedIn accounts.',
+    purpose: 'To automate social media promotion for new content and increase its reach.',
+    best_for: 'Content creators, bloggers, and marketers looking to save time on social media management.',
+    key_features: [
+      'Monitors any RSS feed for new entries.',
+      'Connects to both Twitter/X and LinkedIn.',
+      'Customizable post templates.',
+      'Runs automatically in the background.',
+    ],
+    tags: ['Social Media', 'Content', 'RSS', 'Twitter', 'LinkedIn'],
+    runner: 'n8n',
+    json_workflow: {
+      "nodes": [
+        { "parameters": { "url": "https://your-blog.com/rss" }, "name": "Read RSS Feed", "type": "n8n-nodes-base.rssFeedRead", "position": [450, 300] },
+        { "parameters": { "text": "New Blog Post: {{ $json.title }} - {{ $json.link }}" }, "name": "Post to Twitter", "type": "n8n-nodes-base.twitter", "position": [650, 200] },
+        { "parameters": { "message": "Check out our latest article: {{ $json.title }}\\n\\n{{ $json.link }}" }, "name": "Post to LinkedIn", "type": "n8n-nodes-base.linkedIn", "position": [650, 400] }
+      ],
+      "connections": {
+        "Read RSS Feed": { "main": [ [ { "node": "Post to Twitter", "type": "main" } ], [ { "node": "Post to LinkedIn", "type": "main" } ] ] }
+      }
+    },
+    implementation_steps: [
+      'In the "Read RSS Feed" node, replace `https://your-blog.com/rss` with your actual blog\'s RSS feed URL.',
+      'Connect your Twitter/X and LinkedIn accounts in their respective nodes.',
+      'Customize the message templates to match your brand\'s voice.',
+      'Activate the workflow.'
+    ],
+    ai_generated: false,
+  },
+    {
+    id: 'sample-2',
+    title: 'Sync Shopify Customers to Mailchimp',
+    description: 'This workflow automatically adds new customers from your Shopify store to a specific Mailchimp audience, helping you to grow your mailing list effortlessly.',
+    purpose: 'To maintain a synchronized mailing list of customers for marketing campaigns.',
+    best_for: 'E-commerce store owners using Shopify and Mailchimp for their marketing.',
+    key_features: [
+      'Real-time customer data synchronization.',
+      'Assigns tags to new subscribers for segmentation.',
+      'Reduces manual data entry and errors.',
+    ],
+    tags: ['E-commerce', 'Marketing', 'Shopify', 'Mailchimp'],
+    runner: 'Zapier',
+    json_workflow: {
+      "name": "Shopify New Customer to Mailchimp",
+      "trigger": {
+        "app": "Shopify",
+        "event": "New Customer"
+      },
+      "action": {
+        "app": "Mailchimp",
+        "event": "Add/Update Subscriber",
+        "config": {
+          "audience": "YOUR_AUDIENCE_ID",
+          "email": "{{ trigger.email }}",
+          "merge_fields": {
+            "FNAME": "{{ trigger.first_name }}",
+            "LNAME": "{{ trigger.last_name }}"
+          }
+        }
+      }
+    },
+    implementation_steps: [
+        'Connect your Shopify account to Zapier and authorize access.',
+        'Connect your Mailchimp account.',
+        'In the "Action" step, select your target Mailchimp audience ID.',
+        'Map any additional fields you want to sync from Shopify to Mailchimp.',
+        'Turn on the Zap.'
+    ],
+    ai_generated: false,
+  }
+];
+
 
 export const ICONS = {
   copy: (props: React.SVGProps<SVGSVGElement>) => (
