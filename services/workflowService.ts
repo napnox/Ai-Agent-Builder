@@ -6,11 +6,8 @@ export const generateWorkflow = async (userInput: string, filters: Filters): Pro
     return null;
   }
 
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey || apiKey.trim() === '') {
-    throw new Error('Configuration Error: The `API_KEY` is missing. Please ensure the API key is correctly set as an environment variable in your NapNox deployment settings.');
-  }
+  // Use the environment variable if available, otherwise fall back to the provided key.
+  const apiKey = process.env.API_KEY || 'AIzaSyBTSAK2mh15BKwInjLgSB_dF2ySE3UgJrY';
 
   const ai = new GoogleGenAI({ apiKey });
 

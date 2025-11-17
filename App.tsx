@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Workflow, Filters, SingleFilterCategory } from './types';
 import { FILTER_OPTIONS, EXAMPLE_PROMPTS, ICONS, SAMPLE_WORKFLOWS } from './constants';
@@ -16,7 +15,7 @@ const App: React.FC = () => {
   const [filters, setFilters] = useState<Filters>({
     platform: '', automationType: '', tools: []
   });
-  const [workflow, setWorkflow] = useState<Workflow | null>(null);
+  const [generatedWorkflow, setGeneratedWorkflow] = useState<Workflow | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,15 +24,8 @@ const App: React.FC = () => {
   const [napNoxUser, setNapNoxUser] = useState<{ id: string; jwtToken: string | null } | null>(null);
   const [generationCount, setGenerationCount] = useState(0);
   const [resetTime, setResetTime] = useState<number | null>(null);
-  const [isApiKeyMissing, setIsApiKeyMissing] = useState(false);
-
 
   useEffect(() => {
-    // API Key Check
-    if (!process.env.API_KEY || process.env.API_KEY.trim() === '') {
-      setIsApiKeyMissing(true);
-    }
-    
     // User Authentication
     const params = new URLSearchParams(window.location.search);
     const userId = params.get("user_id");
@@ -87,11 +79,11 @@ const App: React.FC = () => {
     }
     setIsLoading(true);
     setError(null);
-    setWorkflow(null);
+    setGeneratedWorkflow(null);
     
     try {
       const result = await generateWorkflow(userInput, filters);
-      setWorkflow(result);
+      setGeneratedWorkflow(result);
        if (result && napNoxUser) {
         const newCount = generationCount + 1;
         setGenerationCount(newCount);
@@ -234,28 +226,22 @@ const App: React.FC = () => {
     if (error) {
       return <p className="text-center text-red-600 p-8 bg-red-50 rounded-lg whitespace-pre-wrap">{error}</p>;
     }
-    if (workflow) {
+    if (generatedWorkflow) {
       return (
-        <WorkflowCard 
-            workflow={workflow}
-            onViewDetails={() => setSelectedWorkflow(workflow)}
-        />
-      );
-    }
-    if (isApiKeyMissing) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {SAMPLE_WORKFLOWS.map(wf => (
-              <WorkflowCard key={wf.id} workflow={wf} onViewDetails={() => setSelectedWorkflow(wf)} />
-          ))}
+        <div className="max-w-md mx-auto">
+          <WorkflowCard 
+              workflow={generatedWorkflow}
+              onViewDetails={() => setSelectedWorkflow(generatedWorkflow)}
+          />
         </div>
       );
     }
+    
     return (
-      <div className="text-center p-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-2xl">
-        <ICONS.sparkles className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-        <h3 className="text-lg font-semibold text-gray-800">Your AI Agent is ready</h3>
-        <p>Describe your goal, and your generated workflow will appear here.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {SAMPLE_WORKFLOWS.map(wf => (
+            <WorkflowCard key={wf.id} workflow={wf} onViewDetails={() => setSelectedWorkflow(wf)} />
+        ))}
       </div>
     );
   };
@@ -291,18 +277,11 @@ const App: React.FC = () => {
         <main className="w-full">
             
           <div className="light-card animated-border-box shadow-2xl rounded-2xl p-6 mb-16">
-            {isApiKeyMissing && (
-              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-md mb-6" role="alert">
-                <p className="font-bold">Configuration Needed</p>
-                <p className="text-sm">The AI generation feature is disabled because an API key is not configured. Please set the <code className="bg-yellow-200 text-yellow-900 px-1 rounded">API_KEY</code> environment variable in your deployment settings to enable it. You can browse the samples below.</p>
-              </div>
-            )}
             <textarea
               value={userInput}
               onChange={e => setUserInput(e.target.value)}
               placeholder="e.g., When a new order is created in Shopify, add a row to a Google Sheet..."
-              className="w-full h-28 bg-white border border-gray-300 rounded-lg p-4 focus-custom transition resize-none text-lg placeholder-gray-500 disabled:bg-gray-100"
-              disabled={isApiKeyMissing}
+              className="w-full h-28 bg-white border border-gray-300 rounded-lg p-4 focus-custom transition resize-none text-lg placeholder-gray-500"
             />
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
@@ -316,7 +295,6 @@ const App: React.FC = () => {
                     <button
                         onClick={handleExample}
                         className="custom-text-link font-medium transition text-sm"
-                        disabled={isApiKeyMissing}
                     >
                         Try an Example
                     </button>
@@ -328,7 +306,7 @@ const App: React.FC = () => {
                 </div>
                 <button
                     onClick={handleGenerate}
-                    disabled={isLoading || !userInput || !canGenerate || isApiKeyMissing}
+                    disabled={isLoading || !userInput || !canGenerate}
                     className="w-full sm:w-auto custom-button text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 shadow-sm hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
                 >
                     <ICONS.wand className="w-5 h-5" />
