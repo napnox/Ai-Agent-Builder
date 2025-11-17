@@ -6,11 +6,14 @@ export const generateWorkflow = async (userInput: string, filters: Filters): Pro
     return null;
   }
 
-  if (!process.env.API_KEY || process.env.API_KEY.trim() === '') {
+  // Use the environment variable if available, otherwise fall back to the provided key to ensure functionality.
+  const apiKey = process.env.API_KEY || 'AIzaSyBTSAK2mh15BKwInjLgSB_dF2ySE3UgJrY';
+
+  if (!apiKey || apiKey.trim() === '') {
     throw new Error('API key is missing or empty. Please ensure the `API_KEY` environment variable is correctly set in your deployment environment.');
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: apiKey });
 
   const filtersDescription = Object.entries(filters)
     .filter(([, value]) => {
