@@ -30,7 +30,7 @@ const App: React.FC = () => {
     // User Authentication
     const params = new URLSearchParams(window.location.search);
     const userId = params.get("user_id");
-    // FIX: Retrieve token from 'token' param as per updated WordPress shortcode
+    // Retrieve token from 'token' param as per updated WordPress shortcode
     // We keep 'jwt_token' as a fallback just in case.
     const jwtToken = params.get("token") || params.get("jwt_token"); 
     
@@ -140,7 +140,12 @@ const App: React.FC = () => {
   }, []);
   
   const handleSaveToNapNox = useCallback(async (workflowToSave: Workflow) => {
-    if (!napNoxUser || !napNoxUser.jwtToken) {
+    // Get params directly from URL to ensure we have the latest token sent by the iframe
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token") || urlParams.get("jwt_token");
+    const user_id = urlParams.get("user_id");
+
+    if (!token || !user_id) {
       const errorMessage = "Authentication Error: The JWT security token is missing. Please check that the NapNox integration is configured correctly.";
       showToast(errorMessage);
       setError(errorMessage);
@@ -155,7 +160,7 @@ const App: React.FC = () => {
       tool_used: workflowToSave.runner,
       difficulty: "Easy", // As per original spec
       json_workflow: JSON.stringify(workflowToSave.json_workflow, null, 2),
-      user_id: napNoxUser.id
+      user_id: user_id
     };
     
     showToast("Saving to NapNox...");
@@ -165,7 +170,7 @@ const App: React.FC = () => {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${napNoxUser.jwtToken}` // Use the JWT Bearer token
+          "Authorization": `Bearer ${token}` // Use the token from URL
         },
         body: JSON.stringify(workflowData),
       });
@@ -184,7 +189,7 @@ const App: React.FC = () => {
       showToast("⚠️ Network error, please try again later.");
       setError("A network error occurred while trying to save the workflow.");
     }
-  }, [napNoxUser, filters.automationType]);
+  }, [filters.automationType]);
   
   const CountdownTimer = ({ expiryTimestamp }: { expiryTimestamp: number }) => {
     const [timeLeft, setTimeLeft] = useState(expiryTimestamp - Date.now());
