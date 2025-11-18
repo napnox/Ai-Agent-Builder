@@ -31,8 +31,7 @@ const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const userId = params.get("user_id");
     // Retrieve token from 'token' param as per updated WordPress shortcode
-    // We keep 'jwt_token' as a fallback just in case.
-    const jwtToken = params.get("token") || params.get("jwt_token"); 
+    const jwtToken = params.get("token"); 
     
     if (userId) {
       const user = { id: userId, jwtToken };
@@ -142,7 +141,7 @@ const App: React.FC = () => {
   const handleSaveToNapNox = useCallback(async (workflowToSave: Workflow) => {
     // Get params directly from URL to ensure we have the latest token sent by the iframe
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token") || urlParams.get("jwt_token");
+    const token = urlParams.get("token");
     const user_id = urlParams.get("user_id");
 
     if (!token || !user_id) {
@@ -153,14 +152,15 @@ const App: React.FC = () => {
     }
 
     const workflowData = {
+      user_id,
       title: workflowToSave.title,
       short_description: workflowToSave.description,
+      json_file_url: JSON.stringify(workflowToSave.json_workflow, null, 2),
       category: filters.automationType || workflowToSave.tags[0] || 'Uncategorized',
       tags: workflowToSave.tags.join(', '),
       tool_used: workflowToSave.runner,
-      difficulty: "Easy", // As per original spec
-      json_workflow: JSON.stringify(workflowToSave.json_workflow, null, 2),
-      user_id: user_id
+      workflow_image: "", 
+      difficulty: "Easy"
     };
     
     showToast("Saving to NapNox...");
@@ -170,7 +170,7 @@ const App: React.FC = () => {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // Use the token from URL
+          "Authorization": "Bearer " + token
         },
         body: JSON.stringify(workflowData),
       });
