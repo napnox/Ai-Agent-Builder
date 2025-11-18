@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Workflow, Filters, SingleFilterCategory } from './types';
 import { FILTER_OPTIONS, EXAMPLE_PROMPTS, ICONS, SAMPLE_WORKFLOWS } from './constants';
@@ -29,7 +30,10 @@ const App: React.FC = () => {
     // User Authentication
     const params = new URLSearchParams(window.location.search);
     const userId = params.get("user_id");
-    const jwtToken = params.get("jwt_token"); // Read the JWT from the URL
+    // FIX: Retrieve token from 'token' param as per updated WordPress shortcode
+    // We keep 'jwt_token' as a fallback just in case.
+    const jwtToken = params.get("token") || params.get("jwt_token"); 
+    
     if (userId) {
       const user = { id: userId, jwtToken };
       setNapNoxUser(user);
@@ -137,7 +141,7 @@ const App: React.FC = () => {
   
   const handleSaveToNapNox = useCallback(async (workflowToSave: Workflow) => {
     if (!napNoxUser || !napNoxUser.jwtToken) {
-      const errorMessage = "Authentication Error: The JWT security token is missing from the URL. Please check for a debug message on your WordPress page and ensure the JWT plugin is configured correctly with a secret key.";
+      const errorMessage = "Authentication Error: The JWT security token is missing. Please check that the NapNox integration is configured correctly.";
       showToast(errorMessage);
       setError(errorMessage);
       return;
